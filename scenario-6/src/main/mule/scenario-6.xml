@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" 
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+    <http:listener-config name="HTTP_Listener_config">
+        <http:listener-connection host="0.0.0.0" port="8082"/>
+    </http:listener-config>
+
+    <flow name="scenario-6Flow">
+
+        <http:listener config-ref="HTTP_Listener_config" path="/sc6"/>
+
+        <logger level="INFO" message="Flow Start"/>
+
+        <try>
+
+            <logger level="INFO" message="Inside Try - Before Error"/>
+
+            <raise-error type="VALIDATION:INVALID_INPUT" description="Error inside Try"/>
+
+            <logger level="INFO" message="Inside Try - After Error"/>
+
+            <error-handler>
+
+                <on-error-continue type="VALIDATION:INVALID_INPUT">
+
+                    <logger level="ERROR" message='Handled inside Try: #[error.description]'/>
+
+                    <set-payload value='#[%dw 2.0&#10;output json&#10;---&#10;{&#10;                        "status": "handled in try"&#10;                    }]'/>
+
+                </on-error-continue>
+
+            </error-handler>
+
+        </try>
+
+        <logger level="INFO" message="Flow continues after Try"/>
+
+        <set-payload value='#[%dw 2.0&#10;output json&#10;---&#10;{&#10;            "status": "Flow completed"&#10;        }]'/>
+
+    </flow>
+
+</mule>
