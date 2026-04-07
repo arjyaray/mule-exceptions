@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" 
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+    <http:listener-config name="HTTP_Listener_config">
+        <http:listener-connection host="0.0.0.0" port="8082"/>
+    </http:listener-config>
+
+    <flow name="continueFlow">
+
+        <http:listener config-ref="HTTP_Listener_config" path="/sc5/continue"/>
+
+        <logger level="INFO" message="Continue Flow Start"/>
+
+        <raise-error type="VALIDATION:INVALID_INPUT" description="Business error"/>
+
+        <logger level="INFO" message="This will not execute"/>
+
+        <error-handler>
+
+            <on-error-continue type="VALIDATION:INVALID_INPUT">
+
+                <logger level="ERROR" message='Handled (Continue): #[error.description]'/>
+
+                <set-payload value='#[%dw 2.0&#10;output json&#10;---&#10;{&#10;                    "status": "success",&#10;                    "message": "Business error handled"&#10;                }]'/>
+
+            </on-error-continue>
+
+        </error-handler>
+
+    </flow>
+
+    <flow name="propagateFlow">
+
+        <http:listener config-ref="HTTP_Listener_config" path="/sc5/propagate"/>
+
+        <logger level="INFO" message="Propagate Flow Start"/>
+
+        <raise-error type="DB:CONNECTIVITY" description="System error"/>
+
+        <logger level="INFO" message="This will not execute"/>
+
+        <error-handler>
+
+            <on-error-propagate type="DB:CONNECTIVITY">
+
+                <logger level="ERROR" message='Handled (Propagate): #[error.description]'/>
+				<set-payload value='#[%dw 2.0&#10;output json&#10;---&#10;{&#10;                    "status": "error",&#10;                    "message": "error handled"&#10;                }]' doc:name="Set Payload" doc:id="1517e6c8-db56-48c7-9965-055bae566444" />
+
+            
+</on-error-propagate>
+
+        </error-handler>
+
+    </flow>
+
+</mule>
