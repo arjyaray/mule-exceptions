@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" 
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" 
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+    <http:listener-config name="HTTP_Listener_config">
+        <http:listener-connection host="0.0.0.0" port="8082"/>
+    </http:listener-config>
+
+    <flow name="scenario-17Flow">
+
+        <http:listener config-ref="HTTP_Listener_config" path="/sc17"/>
+
+        <scatter-gather>
+
+            <route>
+                <set-payload value='#[%dw 2.0&#10;output json&#10;---&#10;{&#10;                    "service1": "success"&#10;}]'/>
+            </route>
+
+            <route>
+                <raise-error type="MULE:CONNECTIVITY" description="Service failed"/>
+            </route>
+
+        </scatter-gather>
+
+        <error-handler>
+
+            <on-error-continue type="ANY">
+
+                <set-payload value='#[%dw 2.0&#10;output json&#10;---&#10;{&#10;                    "status": "partial failure",&#10;                    "message": "One route failed"&#10;}]'/>
+
+            </on-error-continue>
+
+        
+</error-handler>
+
+    </flow>
+    <flow name="scenario-17Flow2">
+
+        <http:listener config-ref="HTTP_Listener_config" path="/sc17.2"/>
+
+        <scatter-gather>
+
+            <route>
+                <try>
+
+                    <set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;                        "service1": "success"&#10;}]'/>
+
+                    <error-handler>
+                        <on-error-continue type="ANY">
+                            <set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;                                "service1": "failed"&#10;}]'/>
+                        </on-error-continue>
+                    </error-handler>
+
+                </try>
+            </route>
+
+            <route>
+                <try>
+
+                    <raise-error type="MULE:CONNECTIVITY" description="Service failed"/>
+
+                    <error-handler>
+                        <on-error-continue type="ANY">
+                            <set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;                                "service2": "failed"&#10;}]'/>
+                        </on-error-continue>
+                    </error-handler>
+
+                </try>
+            </route>
+
+        </scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="db3238f4-766e-4f34-b473-e709749b4689" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload mapObject (item) -> item.payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+
+    
+</flow>
+
+</mule>
