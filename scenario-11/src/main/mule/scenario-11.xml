@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" 
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+    <http:listener-config name="HTTP_Listener_config">
+        <http:listener-connection host="0.0.0.0" port="8082"/>
+    </http:listener-config>
+
+    <flow name="scenario-11Flow">
+
+        <http:listener config-ref="HTTP_Listener_config" path="/sc11"/>
+
+        <logger level="INFO" message="Flow Start"/>
+
+        <try>
+
+            <until-successful maxRetries="2" millisBetweenRetries="1000">
+
+                <raise-error type="MULE:CONNECTIVITY" description="Simulated failure"/>
+
+            </until-successful>
+
+            <logger level="INFO" message="Inside Try after Until Successful"/>
+
+            <error-handler>
+
+                <on-error-continue type="ANY">
+
+                    <logger level="ERROR" 
+                            message='Retries exhausted handled in Try: #[error.description]'/>
+
+                    <set-payload value='#[%dw 2.0&#10;output json&#10;---&#10;{&#10;                        "status": "handled after retries"&#10;}]'/>
+
+                </on-error-continue>
+
+            </error-handler>
+
+        </try>
+
+        <logger level="INFO" message="Flow continues after Try"/>
+
+        <set-payload value='#[%dw 2.0&#10;output json&#10;---&#10;{&#10;            "status": "flow completed"&#10;}]'/>
+
+    </flow>
+
+</mule>
