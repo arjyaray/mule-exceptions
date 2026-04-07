@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" 
+      xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+
+    <http:listener-config name="HTTP_Listener_config">
+        <http:listener-connection host="0.0.0.0" port="8082"/>
+    </http:listener-config>
+
+    <flow name="scenario-2Flow">
+
+        <http:listener config-ref="HTTP_Listener_config" path="/sc2"/>
+
+        <logger level="INFO" message="Main Flow: Start"/>
+
+        <flow-ref name="subFlow"/>
+
+        <logger level="INFO" message="Main Flow: Continued after subflow"/>
+
+        <set-payload value='#[%dw 2.0&#10;output json&#10;---&#10;{&#10;          "status": "Main flow completed successfully"&#10;        }]'/>
+
+    </flow>
+
+    <sub-flow name="subFlow">
+
+        <logger level="INFO" message="Subflow: Start"/>
+
+        <try>
+
+            <set-payload value="Before Error in Subflow"/>
+
+            <raise-error type="VALIDATION:INVALID_INPUT" description="Error in subflow"/>
+
+            <logger level="INFO" message="Subflow: After error"/>
+
+            <error-handler>
+
+                <on-error-continue type="VALIDATION:INVALID_INPUT">
+
+                    <logger level="ERROR" 
+                            message='Subflow Error Handled: #[error.description]'/>
+
+                    <set-payload value='{
+                        "subflowStatus": "error handled",
+                        "message": "Recovered in subflow"
+                    }'/>
+
+                </on-error-continue>
+
+            </error-handler>
+
+        </try>
+
+    </sub-flow>
+
+</mule>
